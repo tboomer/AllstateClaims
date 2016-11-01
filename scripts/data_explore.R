@@ -44,4 +44,6 @@ geom_tile()
 ggplot(mytrain, aes(x=id, y=logloss)) + geom_point(size = 0.1)
 # No correlation with ID
 #-------------------------------------------------------------------------------
-
+train[, 2:117] <- lapply(train[, 2:117], as.factor)
+train$bigloss <- ifelse(train$loss > 25000, TRUE, FALSE)
+summary(train[,])
