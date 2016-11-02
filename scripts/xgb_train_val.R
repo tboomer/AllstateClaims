@@ -18,13 +18,39 @@ calc_mae <- function(preds, y) {
     sum(abs(y - preds))/length(y)
 }
 
+# Function to assign a new factor level to factors that appear <= n times.
+reassign_levels <- function(var, n, new_val = "XX") {
+    new_levels <- names(table(var))
+    new_levels[table(var) <= n] <- new_val
+    levels(var) <- new_levels
+    return(var)
+}
+
 # Read source data
 train <- read_csv('./source/train.csv.zip')
 test <- read_csv('./source/test.csv.zip')
 
-# Modify features
+# Transform character to factor variables with common train/test levels
+test$loss <- -99
+all <- rbind(train, test)
+all[, 2:117] <- lapply(all[, 2:117], as.factor)
+
+# Consolidate factor levels with fewer than n instances. Apply this logic only
+# to factor variables with >= p levels.
+n <- 2
+p <- 20
+num_levels <- sapply(all[,2:117], function(x) length(levels(x)))
+factor_names <- names(all[,2:117])
+col_index <- factor_names[num_levels >= p]
+all[, col_index] <- lapply(all[, col_index], function(x) reassign_levels(x,n))
+
+train <- filter(all, loss != -99)
+test <- filter(all, loss == -99)
+rm(all)
+
+
+# Log-transform loss variable
 train$logloss <- log(train$loss + 1)
-train[, 2:117] <- lapply(train[, 2:117], as.factor)
 
 features=names(train)
 
@@ -35,11 +61,9 @@ mytrain <- train[index,]
 myval <- train[-index,]
 rm(index)
 
-mytrain <- filter(mytrain, loss < 30000)
-
 # Train XGBoost model
 set.seed(56)
-xgb_val <- sample_n(train, 3000) 
+xgb_val <- sample_n(mytrain, 3000) 
 
 dtrain <- xgb.DMatrix(data=data.matrix(mytrain[,2:131]),
                       label=data.matrix(mytrain$logloss))

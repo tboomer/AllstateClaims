@@ -18,10 +18,33 @@ calc_mae <- function(preds, y) {
 train <- read_csv('./source/train.csv.zip')
 test <- read_csv('./source/test.csv.zip')
 
+# Transform character to factor variables with common levels across 
+# train/test
+test$loss <- -99
+all <- rbind(train, test)
+all[, 2:117] <- lapply(all[, 2:117], as.factor)
+
+# Consolidate factor levels with fewer than n instances. Apply this logic only
+# to factor variables with >= p levels.
+n <- 2
+p <- 20
+num_levels <- sapply(all[,2:117], function(x) length(levels(x)))
+factor_names <- names(all[,2:117])
+col_index <- factor_names[num_levels >= p]
+all[, col_index] <- lapply(all[, col_index], function(x) reassign_levels(x,n))
+
+train <- filter(all, loss != -99)
+test <- filter(all, loss == -99)
+rm(all)
+
+
+# Log-transform loss variable
 train$logloss <- log(train$loss + 1)
 
-
-train[, 2:117] <- lapply(train[, 2:117], as.factor)
+# train$logloss <- log(train$loss + 1)
+# 
+# 
+# train[, 2:117] <- lapply(train[, 2:117], as.factor)
 
 features=names(train)
 
@@ -57,5 +80,5 @@ testpred <- predict(clf, xgb.DMatrix(data=data.matrix(test[,2:131])))
 testpred <- exp(testpred) - 1
 
 submission <- data.frame(id = test$id, loss = testpred)
-write_csv(submission, './submissions/compare1027A.csv')
+write_csv(submission, './submissions/compare1102B.csv')
                                                
