@@ -6,9 +6,8 @@ Title: Neural network (Keras) with sparse data
 
 ## import libraries
 import numpy as np
-np.random.seed(159)
+np.random.seed(123)
 
-import os
 import pandas as pd
 import subprocess
 from scipy.sparse import csr_matrix, hstack
@@ -52,11 +51,10 @@ def batch_generatorp(X, batch_size, shuffle):
             counter = 0
 
 ########################################################################################################################################################
-# Set project working directory
-os.chdir('C:/Users/tboom_000/Documents/Personal/Projects/Kaggle/AllstateClaims')
+
 ## read data
-train = pd.read_csv('./source/train.csv')
-test = pd.read_csv('./source/test.csv')
+train = pd.read_csv('../input/train.csv')
+test = pd.read_csv('../input/test.csv')
 
 ## set test loss to NaN
 test['loss'] = np.nan
@@ -99,12 +97,12 @@ del(xtr_te, sparse_data, tmp)
 ## neural net
 def nn_model():
     model = Sequential()
-    model.add(Dense(100, input_dim = xtrain.shape[1], init = 'he_normal'))
+    model.add(Dense(400, input_dim = xtrain.shape[1], init = 'he_normal'))
+    model.add(PReLU())
+    model.add(Dropout(0.4))
+    model.add(Dense(200, init = 'he_normal'))
     model.add(PReLU())
     model.add(Dropout(0.2))
-    model.add(Dense(50, init = 'he_normal'))
-    model.add(PReLU())
-    model.add(Dropout(0.1))
     model.add(Dense(1, init = 'he_normal'))
     model.compile(loss = 'mae', optimizer = 'adadelta')
     return(model)

@@ -99,12 +99,15 @@ del(xtr_te, sparse_data, tmp)
 ## neural net
 def nn_model():
     model = Sequential()
-    model.add(Dense(100, input_dim = xtrain.shape[1], init = 'he_normal'))
+    model.add(Dense(200, input_dim = xtrain.shape[1], init = 'he_normal'))
     model.add(PReLU())
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.4))
+    model.add(Dense(100, init = 'he_normal'))
+    model.add(PReLU())
+    model.add(Dropout(0.4))
     model.add(Dense(50, init = 'he_normal'))
     model.add(PReLU())
-    model.add(Dropout(0.1))
+    model.add(Dropout(0.2))
     model.add(Dense(1, init = 'he_normal'))
     model.compile(loss = 'mae', optimizer = 'adadelta')
     return(model)
@@ -144,12 +147,12 @@ print('Total - MAE:', mean_absolute_error(y, pred_oob))
 
 ## train predictions
 df = pd.DataFrame({'id': id_train, 'loss': pred_oob})
-df.to_csv('preds_oob.csv', index = False)
+df.to_csv('preds_oob_1105.csv', index = False)
 
 ## test predictions
 pred_test /= (nfolds*nbags)
 df = pd.DataFrame({'id': id_test, 'loss': pred_test})
-df.to_csv('submission_keras.csv', index = False)
+df.to_csv('submission_keras_1105.csv', index = False)
 
 
 
