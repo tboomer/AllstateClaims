@@ -8,7 +8,7 @@ train_bags <- function(df, y, n) {
     
     colpos <- which(colnames(df) == y)
     folds <- createFolds(unlist(df[, colpos]), k = n)
-    pred_oob <- vector("numeric", length = nrow(df))
+    pred_train_oob <- vector("numeric", length = nrow(df))
     errors <- vector("numeric", n)
     
     for(i in 1:n){
@@ -21,10 +21,10 @@ train_bags <- function(df, y, n) {
         
         # INSERT train commands here taking train_X as X and train_y as y
         # --------------------------------------------------------------
-        features=names(train)
+        features=names(train_X)
         
         
-        dtrain <- xgb.DMatrix(data=data.matrix(train_X),
+        dtrain <- xgb.DMatrix(data=data.matrix(train_X[,2:131]),
                               label=data.matrix(train_y))
         #watchlist<-list(dtrain = dtrain)
         
@@ -37,7 +37,7 @@ train_bags <- function(df, y, n) {
                                        subsample=0.85,
                                        colsample_bytree=0.7) ,
                          data = dtrain, 
-                         nrounds = 50, 
+                         nrounds = 200, 
                          verbose = 0,
                          print_every_n=5,
                          early_stopping_rounds    = 15,
@@ -49,13 +49,14 @@ train_bags <- function(df, y, n) {
         #-----------------------------------------------------------------------
         #
         # Predict oob values and calculate error for current bag
-        pred <- predict(clf, xgb.DMatrix(data=data.matrix(oob_x)))
+        pred <- predict(clf, xgb.DMatrix(data=data.matrix(oob_x[, 2:131])))
         pred <- exp(pred) - 1
+        oob_y <- exp(oob_y) - 1
         mae <- sum(abs(oob_y - pred))/length(oob_y)
         cat("MAE fold ", i, mae, "\n")
         
         # Incorporate values from current bag into full oob vector
-        pred_oob[outbag] <- pred
+        pred_train_oob[outbag] <- pred
         errors[i] <- mae
     }
     cat("Mean error: ", mean(errors))

@@ -11,7 +11,7 @@ library(Metrics)
 mae_metric <- function (data,
                         lev = NULL,
                         model = NULL) {
-    out <- mae(exp(data$obs), exp(data$pred))
+    out <- mae(exp(data$obs)-1, exp(data$pred)-1)  
     names(out) <- "MAE"
     out
 }
@@ -55,7 +55,7 @@ rm(all)
 
 
 # Log-transform loss variable
-train$logloss <- log(train$loss)
+train$logloss <- log(train$loss + 1)
 
 trainX <- data.matrix(select(train, -loss, -logloss, -id))
 
@@ -65,12 +65,19 @@ ctrl <- trainControl(method = "cv",
                      verboseIter = TRUE,
                      allowParallel = TRUE)
 
-tune <- expand.grid(nrounds = c(800, 1200),
-             max_depth = 7,
-             eta = c(0.05, 0.01),
-             gamma = 1,
-             colsample_bytree = 0.9,
-             min_child_weight = 1)
+# tune <- expand.grid(nrounds = c(200, 400, 800),
+#              max_depth = 7,
+#              eta = c(0.1, 0.05, 0.01),
+#              gamma = c(1, 2),
+#              colsample_bytree = c(0.85, 0.9),
+#              min_child_weight = 1)
+
+tune <- data.frame(nrounds = 200,
+                   max_depth = 7,
+                   eta = 0.1,
+                   gamma = 1,
+                   colsample_bytree = .85,
+                   min_child_weight = 1)
 
 set.seed(56)
 xgb_model <- train(x = trainX, y = train$logloss,
@@ -81,15 +88,9 @@ xgb_model <- train(x = trainX, y = train$logloss,
                   maximize = FALSE,
                   tuneLength = 1)
 #-------------------------------------------------------------------------------
-# Make prediction on train data
-trainpred <- predict(xgb_model, data.matrix(train[,2:131]))
-trainpred <- exp(trainpred)
-
-
-
 # Make prediction on test data
 testpred <- predict(xgb_model, data.matrix(test[,2:131]))
-testpred <- exp(testpred)
+testpred <- exp(testpred) - 1
 
 submission <- data.frame(id = test$id, loss = testpred)
 write_csv(submission, './submissions/submission1108B.csv')

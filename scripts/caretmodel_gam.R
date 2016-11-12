@@ -3,7 +3,7 @@ library(readr)
 library(caret)
 library(plyr)
 library(dplyr)
-library(xgboost)
+library(kknn)
 library(Metrics)
 
 # Define cost functions
@@ -11,7 +11,7 @@ library(Metrics)
 mae_metric <- function (data,
                         lev = NULL,
                         model = NULL) {
-    out <- mae(exp(data$obs), exp(data$pred))
+    out <- mae(exp(data$obs), exp(data$pred))  
     names(out) <- "MAE"
     out
 }
@@ -65,31 +65,22 @@ ctrl <- trainControl(method = "cv",
                      verboseIter = TRUE,
                      allowParallel = TRUE)
 
-tune <- expand.grid(nrounds = c(800, 1200),
-             max_depth = 7,
-             eta = c(0.05, 0.01),
-             gamma = 1,
-             colsample_bytree = 0.9,
-             min_child_weight = 1)
+tune <- data.frame(kmax = 7,
+                   distance = 2,
+                   kernal = "rectangular")
 
 set.seed(56)
-xgb_model <- train(x = trainX, y = train$logloss,
-                  method = "xgbTree",
+knn_model <- train(x = trainX, y = train$logloss,
+                  method = "kknn",
                   trControl = ctrl,
-                  tuneGrid = tune,
+                  #tuneGrid = tune,
                   metric = "MAE",
                   maximize = FALSE,
                   tuneLength = 1)
 #-------------------------------------------------------------------------------
-# Make prediction on train data
-trainpred <- predict(xgb_model, data.matrix(train[,2:131]))
-trainpred <- exp(trainpred)
-
-
-
 # Make prediction on test data
-testpred <- predict(xgb_model, data.matrix(test[,2:131]))
-testpred <- exp(testpred)
+testpred <- predict(knn_model, data.matrix(test[,2:131]))
+testpred <- exp(testpred) - 1
 
 submission <- data.frame(id = test$id, loss = testpred)
 write_csv(submission, './submissions/submission1108B.csv')
