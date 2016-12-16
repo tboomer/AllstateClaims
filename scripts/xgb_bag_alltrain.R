@@ -49,7 +49,7 @@ rm(all)
 
 
 # Log-transform loss variable
-train$logloss <- log(train$loss + 1)
+train$logloss <- log(train$loss)
 
 # Call bagger script
 oob_pred <- train_bags(train, "logloss", 10)

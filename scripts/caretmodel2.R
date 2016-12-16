@@ -1,4 +1,4 @@
-# Run XGBoost inside caret wrapper using 5-fold CV
+# Run XGBoost inside caret wrapper single model
 library(readr)
 library(caret)
 library(plyr)
@@ -28,22 +28,21 @@ trainX <- data.matrix(select(train, -loss, -logloss, -id))
 
 
 
-ctrl <- trainControl(method = "cv", 
-                     number = 5,
+ctrl <- trainControl(method = "none",
                      summaryFunction = mae_metric,
                      verboseIter = TRUE,
                      allowParallel = TRUE)
 
-tune <- expand.grid(nrounds = 800,
-             max_depth = c(6,7,8),
+tune <- data.frame(nrounds = 800,
+             max_depth = 7,
              eta = 0.05,
-             gamma = 1.5,
-             colsample_bytree = 0.95,
+             gamma = 1,
+             colsample_bytree = 0.9,
              min_child_weight = 1,
-             subsample = 0.9)
+             subsample = 1)
 
-set.seed(111)
-xgb_model4 <- train(x = trainX, y = train$logloss,
+set.seed(555)
+xgb_model <- train(x = trainX, y = train$logloss,
                   method = "xgbTree",
                   trControl = ctrl,
                   tuneGrid = tune,
@@ -62,4 +61,4 @@ testpred <- predict(xgb_model, data.matrix(test[,2:131]))
 testpred <- exp(testpred)
 
 submission <- data.frame(id = test$id, loss = testpred)
-# write_csv(submission, './submissions/submission1207D.csv')
+write_csv(submission, './submissions/submission1207B.csv')

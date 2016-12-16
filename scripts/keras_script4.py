@@ -4,6 +4,7 @@ Author: Danijel Kivaranovic
 Title: Neural network (Keras) with sparse data
 Includes tuning that modifies base script
 '''
+# Adds log transformation
 
 ## import libraries
 import numpy as np
@@ -20,6 +21,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
 from keras.layers.advanced_activations import PReLU
 from datetime import datetime
+import math
 
 ## Batch generators ##################################################################################################################################
 
@@ -65,6 +67,7 @@ test['loss'] = np.nan
 
 ## response and IDs
 y = train['loss'].values
+y = math.log(y)                        # Log transform 7
 id_train = train['id'].values
 id_test = test['id'].values
 
@@ -101,14 +104,14 @@ del(xtr_te, sparse_data, tmp)
 ## neural net
 def nn_model():
     model = Sequential()
-    model.add(Dense(100, input_dim = xtrain.shape[1], init = 'he_normal'))
+    model.add(Dense(200, input_dim = xtrain.shape[1], init = 'he_normal'))
     model.add(PReLU())
     model.add(Dropout(0.2))
-    model.add(Dense(50, init = 'he_normal'))
+    model.add(Dense(100, init = 'he_normal'))
     model.add(PReLU())
     model.add(Dropout(0.1))
     model.add(Dense(1, init = 'he_normal'))
-    model.compile(loss = 'mae', optimizer = 'adagrad')
+    model.compile(loss = 'mae', optimizer = 'adadelta')
     return(model)
 
 ## cv-folds
@@ -117,7 +120,7 @@ folds = KFold(len(y), n_folds = nfolds, shuffle = True, random_state = 111)
 
 ## train models
 i = 0
-nbags = 5
+nbags = 2                   # ***** Reset to 5
 nepochs = 55
 pred_oob = np.zeros(xtrain.shape[0])
 pred_test = np.zeros(xtest.shape[0])
@@ -137,7 +140,7 @@ for (inTr, inTe) in folds:
         pred += model.predict_generator(generator = batch_generatorp(xte, 800, False), val_samples = xte.shape[0])[:,0]
         pred_test += model.predict_generator(generator = batch_generatorp(xtest, 800, False), val_samples = xtest.shape[0])[:,0]
     pred /= nbags
-    pred_oob[inTe] = pred
+    pred_oob[inTe] = math.exp(pred)             #Exponentiate prediction 
     score = mean_absolute_error(yte, pred)
     i += 1
     print('Fold ', i, '- MAE:', score)
@@ -147,12 +150,13 @@ print('Total - MAE:', mean_absolute_error(y, pred_oob))
 
 ## train predictions
 df = pd.DataFrame({'id': id_train, 'loss': pred_oob})
-df.to_csv('preds_oob1205B.csv', index = False)
+df.to_csv('preds_oob1201A.csv', index = False)
 
 ## test predictions
 pred_test /= (nfolds*nbags)
+pred_test = math.exp(pred_test)              #Exponentiate prediction
 df = pd.DataFrame({'id': id_test, 'loss': pred_test})
-df.to_csv('submission_keras1205B.csv', index = False)
+df.to_csv('submission_keras1201A.csv', index = False)
 
 
 
